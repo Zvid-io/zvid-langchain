@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "langchain-zvid"
+version = "0.1.0"
+description = "LangChain tools for the Zvid JSON-to-video/image rendering API"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [{ name = "Zvid", email = "support@zvid.io" }]
+keywords = ["zvid", "langchain", "video", "rendering", "tools", "agents"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Typing :: Typed",
+]
+dependencies = [
+  "zvid>=0.1.0,<1",
+  "langchain-core>=0.3.0",
+  "pydantic>=2.5.0,<3",
+]
+
+[project.urls]
+Homepage = "https://zvid.io"
+Repository = "https://github.com/zvid/zvid-integrations"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.25.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/langchain_zvid"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
