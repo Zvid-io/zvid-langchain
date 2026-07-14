@@ -8,12 +8,23 @@ from langchain_zvid import ZvidToolkit, get_zvid_tools
 from zvid import Zvid
 
 EXPECTED_TOOLS = [
+    "zvid_get_project_schema",
+    "zvid_list_supported_elements",
+    "zvid_get_element_docs",
+    "zvid_get_example_project",
+    "zvid_repair_project",
+    "zvid_validate_project",
     "zvid_create_render",
     "zvid_render_from_template",
     "zvid_get_render",
     "zvid_wait_for_render",
     "zvid_list_templates",
+    "zvid_get_template",
+    "zvid_create_template",
+    "zvid_update_template",
+    "zvid_duplicate_template",
     "zvid_preview_template",
+    "zvid_delete_template",
 ]
 
 
@@ -61,8 +72,44 @@ def test_toolkit_matches_factory():
 def test_tools_have_schemas(tools):
     for tool in tools.values():
         schema = tool.args_schema.model_json_schema()
-        assert schema["properties"], tool.name
+        assert "properties" in schema, tool.name
         assert tool.description
+
+
+def test_authoring_tools_retrieve_live_context_and_validate(tools, routes):
+    routes.add(
+        "GET",
+        "/api/render/schema/api-key",
+        {
+            "schemaVersion": "1.0.0",
+            "target": "project",
+            "jsonSchema": {},
+            "authoringGuidelines": ["Use scenes"],
+        },
+    )
+    routes.add(
+        "GET",
+        "/api/render/elements/TEXT/api-key",
+        {"schemaVersion": "1.0.0", "element": {"type": "TEXT"}},
+    )
+    routes.add(
+        "GET",
+        "/api/render/examples/promo-video/api-key",
+        {"schemaVersion": "1.0.0", "example": {"name": "promo-video"}},
+    )
+    routes.add(
+        "POST",
+        "/api/render/validate/api-key",
+        {"valid": True, "payload": {"duration": 5}, "warnings": []},
+    )
+
+    assert tools["zvid_get_project_schema"].invoke({})["schemaVersion"] == "1.0.0"
+    assert tools["zvid_get_element_docs"].invoke({"element": "TEXT"})["element"]["type"] == "TEXT"
+    assert (
+        tools["zvid_get_example_project"].invoke({"name": "promo-video"})["example"]["name"]
+        == "promo-video"
+    )
+    assert tools["zvid_validate_project"].invoke({"payload": {"duration": 5}})["valid"] is True
 
 
 def test_create_render_routes_images(tools, routes):
@@ -133,3 +180,34 @@ def test_preview_template(tools, routes):
     result = tools["zvid_preview_template"].invoke({"template_id": "tpl_1", "variables": {"t": "x"}})
     assert result["project"]["duration"] == 5
     assert result["stats"]["credits"] == 3
+
+
+def test_template_crud_tools(tools, routes):
+    template = {
+        "id": "tpl_1",
+        "name": "Promo",
+        "project": {"duration": 5},
+        "type": "video",
+        "version": 1,
+        "status": "active",
+    }
+    routes.add("POST", "/api/templates", {"template": template}, 201)
+    routes.add("GET", "/api/templates/tpl_1", {"template": template})
+    routes.add("PUT", "/api/templates/tpl_1", {"template": {**template, "name": "Updated"}})
+    routes.add(
+        "POST",
+        "/api/templates/tpl_1/duplicate",
+        {"template": {**template, "id": "tpl_2", "name": "Copy of Promo"}},
+        201,
+    )
+    routes.add("DELETE", "/api/templates/tpl_1", {"archived": True, "id": "tpl_1"})
+
+    assert tools["zvid_create_template"].invoke(
+        {"name": "Promo", "payload": {"duration": 5}}
+    )["id"] == "tpl_1"
+    assert tools["zvid_get_template"].invoke({"template_id": "tpl_1"})["project"]["duration"] == 5
+    assert tools["zvid_update_template"].invoke(
+        {"template_id": "tpl_1", "name": "Updated"}
+    )["name"] == "Updated"
+    assert tools["zvid_duplicate_template"].invoke({"template_id": "tpl_1"})["id"] == "tpl_2"
+    assert tools["zvid_delete_template"].invoke({"template_id": "tpl_1"})["archived"] is True
