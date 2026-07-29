@@ -9,7 +9,7 @@ description = "LangChain tools for the Zvid JSON-to-video/image rendering API"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
-authors = [{ name = "Zvid", email = "support@zvid.io" }]
+authors = [{ name = "Zvid", email = "help@zvid.io" }]
 keywords = ["zvid", "langchain", "video", "rendering", "tools", "agents"]
 classifiers = [
   "Development Status :: 4 - Beta",
