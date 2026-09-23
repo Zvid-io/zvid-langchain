@@ -4,8 +4,10 @@ Give any LangChain agent the ability to render videos and images with
 [Zvid](https://zvid.io). Thin `StructuredTool` wrappers over the official
 [`zvid` Python SDK](../sdk-python).
 
+This integration is source-only. Neither `langchain-zvid` nor its `zvid` dependency was available on PyPI when checked on 22 September 2026. From the `zvid-integrations` checkout:
+
 ```bash
-pip install langchain-zvid   # pulls in zvid + langchain-core
+python -m pip install ./sdk-python ./langchain
 ```
 
 ## Usage
@@ -50,6 +52,8 @@ tools = ZvidToolkit(Zvid(api_key="zvid_…", base_url="http://localhost:4000")).
 All tools return JSON-serializable dicts. Renders are asynchronous: the create
 tools return a `jobId` plus a note telling the model to call
 `zvid_wait_for_render`.
+
+These tools call REST directly. A render tool spends credits immediately; add your framework's approval step before exposing it to an untrusted request. They do not inherit MCP Creator's draft/quote workflow or its tool-profile restrictions. Supported inline project variables resolve on submission; storing a template first is optional when reuse is not needed.
 
 ## Development
 
